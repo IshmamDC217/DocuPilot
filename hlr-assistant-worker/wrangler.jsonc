@@ -1,0 +1,21 @@
+{
+	"name": "hlr-assistant-worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-08-13",
+	"ai": { "binding": "AI" },
+	"kv_namespaces": [
+	  { "binding": "USAGE", "id": "REPLACE_WITH_PROD_NAMESPACE_ID", "preview_id": "REPLACE_WITH_DEV_NAMESPACE_ID" }
+	],
+	"vars": {
+	  "MODEL": "@cf/meta/llama-3.1-8b-instruct-awq",
+	  "DAILY_CAP": "1000",
+	  "MAX_TOKENS": "300",
+	  "ALLOWED_ORIGINS": "http://localhost:3000,https://www.hlrlookup.com",
+	  "ALLOW_OFFTOPIC": "false",
+	  "USE_OPENAI_COMPAT": "false",
+	  "TIMEZONE": "UTC",
+	  "GATEWAY_URL": "https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/workers-ai",
+	  "ACCOUNT_ID": ""
+	}
+  }
+  
