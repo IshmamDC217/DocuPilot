@@ -21,15 +21,11 @@ export async function sendChat(payload: ChatPayload, signal?: AbortSignal): Prom
   if (!base) throw new Error("NEXT_PUBLIC_WORKER_BASE_URL is not set");
   const res = await fetch(`${base}/api/chat`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     signal,
     cache: "no-store",
   });
-
-  // Normalize JSON either way (200/4xx still returns JSON by contract)
   const data = (await res.json()) as ChatResponse;
   return data;
 }
