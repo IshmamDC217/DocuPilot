@@ -11,14 +11,6 @@ const STORAGE_KEY = "hlr-chat-history-v1";
 
 type Item = { role: "user" | "assistant"; content: string; latency?: number };
 
-const QUICK = [
-  "Show cURL to test the API",
-  "What fields are in the HLR response?",
-  "Explain NOT_AVAILABLE_NETWORK_ONLY",
-  "How do I batch lookups?",
-  "Why am I seeing TOO_MANY_REQUESTS?",
-];
-
 export default function HLRChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -41,7 +33,7 @@ export default function HLRChat() {
         const r = await fetch(`${BASE}/api/health`, { cache: "no-store" });
         const j = (await r.json()) as Health;
         if (j?.usage) setUsage(j.usage);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -55,7 +47,7 @@ export default function HLRChat() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(-40)));
-    } catch {}
+    } catch { }
   }, [items]);
 
   // Copy buttons inside code blocks (event delegation)
@@ -127,10 +119,10 @@ export default function HLRChat() {
           resp.reason === "off_topic"
             ? "I only answer HLR Lookup docs/API questions."
             : resp.reason === "daily_cap"
-            ? `We’re closed (daily cap reached). Resets at ${resp.usage.resetAtUTC} UTC.`
-            : resp.reason === "provider_quota"
-            ? "Provider quota reached. Please try again later."
-            : "Service is unavailable right now.";
+              ? `We’re closed (daily cap reached). Resets at ${resp.usage.resetAtUTC} UTC.`
+              : resp.reason === "provider_quota"
+                ? "Provider quota reached. Please try again later."
+                : "Service is unavailable right now.";
         setItems((prev) => [
           ...prev,
           { role: "assistant", content: msg, latency: performance.now() - t0 },
@@ -163,7 +155,7 @@ export default function HLRChat() {
     setItems([]);
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    } catch { }
     requestAnimationFrame(() => snapToBottom());
   }
 
@@ -177,54 +169,25 @@ export default function HLRChat() {
   return (
     <>
       {/* RIGHT: Assistant */}
-      <section id="chatPanel" className={`panel ${open ? "open" : ""}`}>
+      <section id="chatPanel" className={`panel chat-brand ${open ? "open" : ""}`}>
         {/* Header */}
-        <header className="panel-header">
-          <div className="flex items-center gap-2 md:gap-3">
+        <header className="panel-header header-compact">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="bot-avatar" aria-hidden="true">
-              <video
-                className="avatar-video"
-                src="/bot.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-              />
+              <video className="avatar-video" src="/bot.mp4" autoPlay loop muted playsInline preload="metadata" />
             </span>
-            <div className="panel-title">HLR Assistant</div>
+            <div className="panel-title">Darcy</div>
             <span className={`badge ${isOpen ? "ok" : "closed"}`}>{isOpen ? "Open" : "Closed"}</span>
-            <span className="badge">{usage.count}/{usage.cap} today</span>
+            <span className="badge usage-pill">{usage.count}/{usage.cap} today</span>
           </div>
-
           <span className="grow" />
-
-          <div className="chat-toolbar flex items-center gap-2">
-            <button
-              className="btn"
-              onClick={onRegenerate}
-              disabled={!items.some((i) => i.role === "user") || status === "loading"}
-            >
-              Regenerate
-            </button>
-            <button className="btn" onClick={() => copy(lastCurl)} disabled={!lastCurl}>
-              Copy last cURL
-            </button>
-            {status === "loading" ? (
-              <button className="btn" onClick={onStop} title="Stop">
-                Stop
-              </button>
-            ) : (
-              <button className="btn" onClick={() => setOpen(false)} title="Close">
-                ×
-              </button>
-            )}
-          </div>
+          <button className="icon-btn" onClick={() => setOpen(false)} title="Close" aria-label="Close">×</button>
         </header>
 
+
         {/* Usage bar */}
-        <div className="border-b" style={{ borderColor: "var(--card-border)" }}>
-          <div className="px-3 py-2 bg-white">
+        <div style={{ borderColor: "var(--card-border)" }}>
+          <div className="px-3 py-2">
             <div
               aria-label="usage"
               className="h-[6px] rounded-full"
@@ -298,73 +261,44 @@ export default function HLRChat() {
             </button>
           )}
 
-          {/* Quick prompts (first run) */}
-          {items.length === 0 && (
-            <div className="border-t bg-white" style={{ borderColor: "var(--bubble-border)" }}>
-              <div className="flex flex-wrap gap-2 p-3">
-                {QUICK.map((q) => (
-                  <button
-                    key={q}
-                    className="btn"
-                    onClick={() => onAsk(undefined, q)}
-                    style={{ borderRadius: 999, padding: "6px 10px" }}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Composer */}
           <div className="composer">
-            <form
-              className="input-wrap w-full"
-              onSubmit={(e) => (status === "loading" ? onStop() : onAsk(e))}
-            >
+            <div className="input-wrap" style={{ width: "100%" }}>
               <textarea
                 id="input"
-                placeholder="Message HLR Assistant… (Shift+Enter = newline)"
+                placeholder="Type your message here..."
                 value={input}
                 disabled={disabled}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    status === "loading" ? onStop() : onAsk();
+                    onAsk(e as any);
                   }
                 }}
               />
               <button
                 id="sendBtn"
                 title={status === "loading" ? "Stop" : "Send"}
+                onClick={(e) => (status === "loading" ? onStop() : onAsk(e as any))}
                 disabled={usage.count >= usage.cap}
               >
                 {status === "loading" ? "■" : "➤"}
               </button>
-            </form>
+            </div>
 
-            {/* Helper row – perfectly centered w/ the circle button */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs" style={{ color: "var(--chat-muted)" }}>
-              <span>
-                Press <code>Enter</code> to send · <code>Shift+Enter</code> for newline
-              </span>
-              {lastCurl && (
-                <button
-                  className="btn"
-                  onClick={() => copy(lastCurl)}
-                  style={{ padding: "2px 8px", borderRadius: 999 }}
-                >
-                  Copy cURL
-                </button>
-              )}
-              <button
-                className="btn"
-                onClick={onClearHistory}
-                style={{ padding: "2px 8px", borderRadius: 999 }}
-              >
-                Clear
-              </button>
+            {/* meta row */}
+            <div className="meta">
+              <div className="hint">
+                Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for newline
+              </div>
+
+              {/* pushes the buttons to the right */}
+              <div className="spacer" />
+
+              <div className="meta-actions">
+                <button className="chip" onClick={onClearHistory}>Clear</button>
+              </div>
             </div>
           </div>
         </div>
@@ -376,7 +310,7 @@ export default function HLRChat() {
           <button id="botFab" aria-label="Open HLR Assistant" onClick={() => setOpen(true)}>
             <video className="fab-video" src="/bot.mp4" autoPlay loop muted playsInline preload="metadata" />
           </button>
-          <div id="botHint">💬 Need help? Ask our AI assistant!</div>
+          <div id="botHint">💬 Need help? Ask our AI assistant, Darcy!</div>
         </>
       )}
     </>
@@ -399,11 +333,11 @@ function loadHistory(): Item[] {
         )
         .slice(-40);
     }
-  } catch {}
+  } catch { }
   return [];
 }
 
 function copy(text?: string | null) {
   if (!text) return;
-  navigator.clipboard?.writeText(text).catch(() => {});
+  navigator.clipboard?.writeText(text).catch(() => { });
 }
